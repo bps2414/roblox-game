@@ -8,6 +8,5 @@
 *.rbxmx
 !/assets/**
 sourcemap.json
-roblox.yml
 globalTypes.d.luau
 /build
