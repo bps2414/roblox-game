@@ -11,7 +11,9 @@ fi
 
 selene src
 
-lune run tests/sim.spec
+for spec in tests/*.spec.luau; do
+	lune run "${spec%.luau}"
+done
 
 # Tipos do Roblox para o luau-lsp (baixados uma vez)
 if [[ ! -f globalTypes.d.luau ]]; then

@@ -144,9 +144,20 @@ Config.SHRINE = {
 	blessingPerception = 15,
 }
 
--- Economy (used by the server in M2, and by the balance report).
-Config.RECRUIT_BASE_COST = 25
-Config.RECRUIT_COST_GROWTH = 1.12
+-- Economy
+Config.STARTING_GOLD = 100
+Config.STARTING_GOBLINS = 3
+Config.MAX_GOBLINS = 12
+Config.MAX_PARTY = 10
+Config.TAVERN_OFFERS = 3
+Config.ITEM_SELL_FRACTION = 0.5
+-- Seconds of slack when collecting a run (clock drift / latency).
+Config.COLLECT_TOLERANCE = 2
+
+-- Better rolls cost more. Roughly 20..40 gold.
+function Config.recruitCost(baseHp: number, basePerception: number, baseLuck: number): number
+	return 20 + math.floor((baseHp - 8) * 1.5 + (basePerception - 10) * 0.4 + baseLuck * 0.3)
+end
 
 function Config.sellValue(level: number): number
 	return math.floor(15 + 20 * (level - 1) ^ 1.3)

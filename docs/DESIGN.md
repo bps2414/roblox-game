@@ -107,12 +107,22 @@ iniciais para o fundo vira exploit (eles morrem, mas o loot de andar fundo volta
 | médio L5 | 100% | 95% | 63% | 8% |
 | tardio L10 | 100% | 98% | 94% | 80% |
 
+## Rede (M2)
+
+Um único `RemoteFunction` (`ReplicatedStorage.Remotes.Request`) recebe `(ação, payload)` e sempre
+devolve o perfil atualizado. Ações: `state`, `recruit`, `sellGoblin`, `buyItem`, `sellItem`, `equip`,
+`send`, `collect`. Todas as regras ficam em `Sim/Profile.luau` (testado no Lune); o servidor só
+fornece seeds aleatórias, o relógio (`GetServerTimeNow`) e o DataStore.
+
+- Goblins mortos somem **com o equipamento**. O Hard Hat quebra depois de salvar um goblin.
+- Se o quartel fica vazio e o ouro não paga um recruta, um goblin grátis aparece (evita travar o jogo).
+
 ## Marcos
 
 | # | Entrega | Studio? |
 |---|---|---|
-| M1 | Simulação em Luau + testes Lune + transmissão em texto + Monte Carlo | não |
-| M2 | Server/client: RemoteEvents, roster, equipar, andar, SEND, resultado (UI simples) | só para jogar |
+| M1 ✅ | Simulação em Luau + testes Lune + transmissão em texto + Monte Carlo | não |
+| M2 ✅ | Server/client: remotes, roster, equipar, taverna, loja, andar, SEND, feed em texto, resultado, save básico | só para jogar |
 | M3 | Visual 2D: cenas das salas, sprites placeholder, câmera de segurança, efeitos de morte | sim, para ver |
 | M4 | Persistência (DataStore), loop de economia completo, upgrades | sim |
 | M5 | Polimento (sons, partículas), aluguel para grupos, progresso offline | sim |

@@ -17,6 +17,18 @@ Jogo para Roblox, desenvolvido com [Rojo](https://rojo.space) (código em arquiv
 2. Instale o plugin do Rojo no Studio (`rojo plugin install`).
 3. `rojo serve` e clique em **Connect** no plugin dentro do Studio.
 
+## Jogando no Studio
+
+Dê **Play** no Studio. Você começa com 100 de ouro e 3 goblins:
+
+1. **Quartel**: veja os goblins, clique nos slots de equipamento pra equipar, marque quem vai na expedição.
+2. **Taverna**: contrate goblins novos. **Loja**: compre e venda equipamentos.
+3. Escolha o andar e aperte **SEND**. Assista pelas câmeras (Q/E ou clique pra trocar).
+4. Quando todos voltarem ou morrerem, **COLLECT** e veja o resultado.
+
+Pra salvar o progresso no Studio, ative *Game Settings → Security → Enable Studio Access to API Services*
+(sem isso o progresso fica só na memória e some ao parar o Play).
+
 ## Checagens (rodam sem o Studio)
 
 ```sh

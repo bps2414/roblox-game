@@ -56,6 +56,33 @@ function Items.get(id: string?): Item?
 	return byId[id]
 end
 
+-- Short stat text, e.g. "+3 ATK +1 DEF".
+function Items.describe(item: Item): string
+	local parts = {}
+	if item.attack then
+		table.insert(parts, `+{item.attack} ATK`)
+	end
+	if item.defense and item.defense > 0 then
+		table.insert(parts, `+{item.defense} DEF`)
+	end
+	if item.hp then
+		table.insert(parts, `+{item.hp} HP`)
+	end
+	if item.perception then
+		table.insert(parts, `+{item.perception} PER`)
+	end
+	if item.luck then
+		table.insert(parts, `+{item.luck} LCK`)
+	end
+	if item.food then
+		table.insert(parts, `+{item.food} FOOD`)
+	end
+	if item.hardHat then
+		table.insert(parts, "survives 1 deadly trap")
+	end
+	return if #parts > 0 then table.concat(parts, " ") else "nothing special"
+end
+
 -- Items that can drop on a floor of this depth (price > 0 excludes starter junk).
 function Items.dropPool(depth: number): { Item }
 	local maxTier = math.min(1 + math.floor(depth / 3), 4)

@@ -1,3 +1,4 @@
-local Players = game:GetService("Players")
+--!strict
+local App = require(script.App)
 
-print(`Cliente iniciado para {Players.LocalPlayer.Name}`)
+App.start()

@@ -22,6 +22,7 @@ export type GoblinResult = {
 	causeName: string?, -- which trap / monster
 	gold: number,
 	items: { string },
+	hardHatBroken: boolean, -- the Hard Hat saved it and is gone
 	xp: number, -- XP earned (0 if dead)
 	levelBefore: number,
 	levelAfter: number,
@@ -143,6 +144,13 @@ local function delve(goblin: Goblin.Goblin, depth: number, rng: Rng.Rng): (Gobli
 		Rooms.emit(d, "levelup", { amount = levelAfter })
 	end
 
+	local hardHatBroken = false
+	for _, event in d.events do
+		if event.kind == "hardhat" then
+			hardHatBroken = true
+		end
+	end
+
 	return {
 		id = goblin.id,
 		survived = d.alive,
@@ -150,6 +158,7 @@ local function delve(goblin: Goblin.Goblin, depth: number, rng: Rng.Rng): (Gobli
 		causeName = causeName,
 		gold = d.gold,
 		items = d.items,
+		hardHatBroken = hardHatBroken,
 		xp = xp,
 		levelBefore = goblin.level,
 		levelAfter = levelAfter,

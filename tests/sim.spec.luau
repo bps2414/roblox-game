@@ -5,6 +5,7 @@ local Config = require("../src/shared/Sim/Config")
 local Expedition = require("../src/shared/Sim/Expedition")
 local Goblin = require("../src/shared/Sim/Goblin")
 local Narration = require("../src/shared/Sim/Narration")
+local Playback = require("../src/shared/Sim/Playback")
 local Rng = require("../src/shared/Sim/Rng")
 
 local passed, failed = 0, 0
@@ -177,6 +178,23 @@ test("merged events are in time order", function()
 	for _, e in Expedition.merged(result) do
 		check(e.t >= lastT, "out of order")
 		lastT = e.t
+	end
+end)
+
+print("Playback")
+test("final playback state matches the result", function()
+	for seed = 1, 300 do
+		local result = Expedition.run({ seed = seed, depth = 1 + seed % 8, goblins = party(seed, 6) })
+		local start = Playback.all(result, -1)
+		local final = Playback.all(result, result.duration)
+		check(Playback.isFinished(result, result.duration), "not finished")
+		for _, g in result.goblins do
+			check(start[g.id].shown == 0 and start[g.id].status == "delving", "events before start")
+			local state = final[g.id]
+			check(state.gold == g.gold, `gold {state.gold} ~= {g.gold}`)
+			check(state.status == (if g.survived then "returned" else "dead"), `status {state.status}`)
+			check(state.shown == #result.timelines[g.id], "not all events shown")
+		end
 	end
 end)
 

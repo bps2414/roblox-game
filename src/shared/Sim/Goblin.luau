@@ -36,6 +36,16 @@ export type Stats = {
 
 local Goblin = {}
 
+Goblin.TRAIT_INFO = {
+	Greedy = "Loves shiny doors. Never suspects mimics.",
+	Coward = "Avoids growls, often runs from fights.",
+	Dumb = "Ignores door hints. Half perception.",
+	Tough = "+4 HP.",
+	Glutton = "+6 food, but eats twice as much.",
+	Lucky = "+30 luck.",
+	Sneaky = "May sneak past monsters.",
+}
+
 local NAME_START = { "Gr", "Sn", "Z", "N", "M", "Kr", "Sk", "Bl", "W", "Dr", "Gl", "Pl" }
 local NAME_MID = { "ub", "ik", "og", "ib", "urk", "eez", "ag", "ot", "ix", "um", "ap", "ilk" }
 local NAME_END = { "", "", "", "le", "ny", "o", "gle", "wick", "bit", "snout", "toe", "rot" }

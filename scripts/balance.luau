@@ -73,4 +73,4 @@ for _, loadout in LOADOUTS do
 	print("")
 end
 
-print(`Recruit cost starts at {Config.RECRUIT_BASE_COST}; sell value L1/L5/L10 = {Config.sellValue(1)}/{Config.sellValue(5)}/{Config.sellValue(10)}`)
+print(`Recruit cost {Config.recruitCost(8, 10, 0)}..{Config.recruitCost(12, 30, 20)}; sell value L1/L5/L10 = {Config.sellValue(1)}/{Config.sellValue(5)}/{Config.sellValue(10)}`)
