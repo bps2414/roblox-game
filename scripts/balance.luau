@@ -4,12 +4,17 @@
 
 local process = require("@lune/process")
 
+local args = table.clone(process.args)
+if args[1] == "--" then
+	table.remove(args, 1)
+end
+
 local Config = require("../src/shared/Sim/Config")
 local Expedition = require("../src/shared/Sim/Expedition")
 local Goblin = require("../src/shared/Sim/Goblin")
 local Rng = require("../src/shared/Sim/Rng")
 
-local RUNS = tonumber(process.args[1]) or 2000
+local RUNS = tonumber(args[1]) or 2000
 local PARTY = 10
 
 local LOADOUTS: { { name: string, level: number, equipment: Goblin.Equipment } } = {

@@ -47,7 +47,7 @@ function Rooms.emit(d: Delver, kind: string, extra: { [string]: any }?)
 		goblinId = d.goblin.id,
 		room = d.room,
 		kind = kind,
-		hp = d.hp,
+		hp = math.max(0, d.hp),
 	}
 	if extra then
 		for key, value in extra do
@@ -83,7 +83,7 @@ local function avoided(d: Delver, kind: string, name: string?)
 end
 
 -- Goblin swings first. Returns true if the goblin won.
-local function fight(d: Delver, name: string, hp: number, attack: number): boolean
+local function fight(d: Delver, name: string, hp: number, attack: number, cause: string): boolean
 	Rooms.emit(d, "combat", { name = name, amount = hp })
 	local enemyHp = hp
 	for _ = 1, Config.MAX_COMBAT_ROUNDS do
@@ -101,7 +101,7 @@ local function fight(d: Delver, name: string, hp: number, attack: number): boole
 		d.hp -= taken
 		Rooms.emit(d, "hurt", { amount = taken, name = name })
 		if d.hp <= 0 then
-			die(d, "monster", name)
+			die(d, cause, name)
 			return false
 		end
 	end
@@ -171,17 +171,11 @@ function handlers.mimic(d: Delver)
 		return
 	end
 
-	local bite = math.max(1, math.floor(Config.MIMIC.bite(d.depth)) - d.stats.defense)
+	local bite = math.max(1, math.floor(Config.mimicBite(d.depth)) - d.stats.defense)
 	Rooms.emit(d, "mimic", { amount = bite, hp = math.max(0, d.hp - bite) })
 	hurt(d, bite, "mimic", "Mimic")
-	if not d.alive then
-		return
-	end
-
-	if fight(d, "Mimic", Config.MIMIC.hp(d.depth), Config.MIMIC.attack(d.depth)) then
-		d.xp += Config.XP.perKill * d.depth
-		addGold(d, Config.treasureGold(d.depth) * Config.MIMIC.goldMultiplier, "Mimic")
-		rollItemDrop(d)
+	if d.alive then
+		Rooms.emit(d, "mimic_escape")
 	end
 end
 
@@ -215,7 +209,7 @@ function handlers.monster(d: Delver)
 		return
 	end
 
-	if fight(d, monster.name, hp, attack) then
+	if fight(d, monster.name, hp, attack, "monster") then
 		d.xp += Config.XP.perKill * d.depth
 		addGold(d, monster.gold * scale, monster.name)
 	end

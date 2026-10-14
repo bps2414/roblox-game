@@ -90,10 +90,22 @@ Pistas podem enganar; goblins perceptivos leem melhor. Ao fim do andar, o goblin
 - Upgrades permanentes (vagas no quartel, recrutas melhores).
 - Fase 2: alugar goblins para grupos de aventureiros NPC (renda passiva).
 
+### Progressão de andares
+O andar N só desbloqueia quando um goblin **volta vivo** do andar N−1. Sem isso, mandar goblins
+iniciais para o fundo vira exploit (eles morrem, mas o loot de andar fundo volta mesmo assim).
+
 ### Metas de balanceamento
 - Andar 1: ~80% de sobrevivência com equipamento inicial.
 - Andar "médio" (~5): ~20–30% ("manda 10, voltam 2").
 - Andar 10+: só goblins de nível alto e bem equipados voltam.
+
+### Resultado atual (M1, `lune run scripts/balance`)
+| Equipamento | Andar 1 | Andar 3 | Andar 5 | Andar 8 |
+|---|---|---|---|---|
+| inicial (graveto, trapos) | 95% | 28% | 3% | 0% |
+| básico (adaga, couro, tocha) | 100% | 60% | 12% | 0% |
+| médio L5 | 100% | 95% | 63% | 8% |
+| tardio L10 | 100% | 98% | 94% | 80% |
 
 ## Marcos
 

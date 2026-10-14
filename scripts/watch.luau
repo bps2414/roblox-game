@@ -4,14 +4,19 @@
 
 local process = require("@lune/process")
 
+local args = table.clone(process.args)
+if args[1] == "--" then
+	table.remove(args, 1)
+end
+
 local Expedition = require("../src/shared/Sim/Expedition")
 local Goblin = require("../src/shared/Sim/Goblin")
 local Narration = require("../src/shared/Sim/Narration")
 local Rng = require("../src/shared/Sim/Rng")
 
-local depth = tonumber(process.args[1]) or 3
-local count = tonumber(process.args[2]) or 6
-local seed = tonumber(process.args[3]) or os.time()
+local depth = tonumber(args[1]) or 3
+local count = tonumber(args[2]) or 6
+local seed = tonumber(args[3]) or os.time()
 
 local rng = Rng.new(seed)
 local goblins = {}

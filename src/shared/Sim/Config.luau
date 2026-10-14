@@ -63,7 +63,7 @@ function Config.roomWeights(depth: number): { [string]: number }
 		empty = 28,
 		treasure = 22,
 		trap = 12 + 3 * depth,
-		mimic = if depth >= 2 then 2 + 1.5 * depth else 0,
+		mimic = if depth >= 2 then 1 + 1.2 * depth else 0,
 		monster = 14 + 2 * depth,
 		shrine = 7,
 	}
@@ -111,18 +111,10 @@ end
 
 Config.TRAPS = { "spikes", "boulder", "pit", "darts", "crusher" }
 
-Config.MIMIC = {
-	bite = function(depth: number): number
-		return 3 + 1.5 * depth
-	end,
-	hp = function(depth: number): number
-		return 6 + 3 * depth
-	end,
-	attack = function(depth: number): number
-		return 2 + depth
-	end,
-	goldMultiplier = 2.5,
-}
+-- A mimic bites once; if the goblin survives it runs off empty-handed.
+function Config.mimicBite(depth: number): number
+	return 3 + 1.5 * depth
+end
 
 -- minDepth: first floor it shows up on. Stats scale 10% per floor past minDepth.
 Config.MONSTERS = {

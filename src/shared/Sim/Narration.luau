@@ -77,6 +77,8 @@ function Narration.describe(event: Rooms.Event, goblinName: string): string
 		return `{n} notices the chest has teeth. Nope.`
 	elseif kind == "mimic" then
 		return `The chest was a MIMIC! It bites {n} (-{amount} HP).`
+	elseif kind == "mimic_escape" then
+		return `{n} pries itself loose and runs, empty-handed.`
 	elseif kind == "combat" then
 		return `A {name} attacks!`
 	elseif kind == "hit" then

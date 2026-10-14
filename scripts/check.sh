@@ -4,12 +4,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [[ "${1:-}" == "--fix" ]]; then
-	stylua src
+	stylua src tests scripts
 else
-	stylua --check src
+	stylua --check src tests scripts
 fi
 
 selene src
+
+lune run tests/sim.spec
 
 # Tipos do Roblox para o luau-lsp (baixados uma vez)
 if [[ ! -f globalTypes.d.luau ]]; then

@@ -24,4 +24,14 @@ scripts/check.sh        # formatação, lint, tipos (luau-lsp) e build do .rbxl
 scripts/check.sh --fix  # idem, mas corrige a formatação
 ```
 
+Simulação (Luau puro, roda com [Lune](https://lune-org.github.io/docs)):
+
+```sh
+lune run tests/sim.spec              # testes
+lune run scripts/watch -- 3 6 1234   # "transmissão" em texto: andar, nº de goblins, seed
+lune run scripts/balance -- 2000     # Monte Carlo de balanceamento
+```
+
+O design do jogo está em [`docs/DESIGN.md`](docs/DESIGN.md).
+
 O build gera `build/game.rbxl`, que pode ser aberto direto no Roblox Studio.
