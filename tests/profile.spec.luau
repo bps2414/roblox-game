@@ -64,6 +64,21 @@ test("recruit costs gold and replaces the offer", function()
 	check(not Profile.recruit(p, 1, 1), "recruited while broke")
 end)
 
+test("goblin names are unique", function()
+	local p = Profile.new(8)
+	p.gold = 10 ^ 6
+	for i = 1, 9 do
+		Profile.recruit(p, 1, i)
+	end
+	local seen = {}
+	for _, list in { p.goblins, p.tavern } do
+		for _, g in list do
+			check(not seen[g.name], `duplicate name {g.name}`)
+			seen[g.name] = true
+		end
+	end
+end)
+
 test("barracks cap", function()
 	local p = Profile.new(3)
 	p.gold = 10 ^ 6

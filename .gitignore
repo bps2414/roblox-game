@@ -10,3 +10,4 @@
 sourcemap.json
 globalTypes.d.luau
 /build
+/tools/emulator/node_modules

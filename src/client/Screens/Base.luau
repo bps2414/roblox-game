@@ -53,6 +53,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 		return ids
 	end
 
+	-- Drops goblins that are gone and adds newly hired ones while there is room.
 	local function syncParty()
 		local exists = {}
 		for _, goblin in ctx.profile.goblins do
@@ -63,9 +64,10 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				ctx.party[id] = nil
 			end
 		end
-		if next(ctx.party) == nil then
-			for index, goblin in ctx.profile.goblins do
-				if index <= Config.MAX_PARTY then
+		for _, goblin in ctx.profile.goblins do
+			if not ctx.known[goblin.id] then
+				ctx.known[goblin.id] = true
+				if #partyIds() < Config.MAX_PARTY then
 					ctx.party[goblin.id] = true
 				end
 			end
@@ -145,8 +147,8 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				Size = UDim2.new(1, 0, 0, 6),
 			}),
 			Ui.label(
-				`HP {stats.maxHp}  FOOD {stats.food}  PER {stats.perception}  LCK {stats.luck}  ATK {stats.attack}  DEF {stats.defense}`,
-				{ Position = UDim2.fromOffset(0, 34), TextSize = 17 }
+				`HP {stats.maxHp} FOOD {stats.food} PER {stats.perception} LCK {stats.luck} ATK {stats.attack} DEF {stats.defense}`,
+				{ Position = UDim2.fromOffset(0, 34), TextSize = 16 }
 			),
 			Ui.label(Goblin.TRAIT_INFO[goblin.trait] or "", {
 				Position = UDim2.fromOffset(0, 54),
@@ -301,11 +303,11 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 					Ui.padding(4, 8),
 					Ui.label(
 						`{item.name}{if owned > 0 then Ui.paint(` x{owned}`, Ui.color.gold) else ""}`,
-						{ Size = UDim2.new(1, -170, 0, 20) }
+						{ Size = UDim2.new(1, -184, 0, 20) }
 					),
 					Ui.label(Items.describe(item), {
 						Position = UDim2.fromOffset(0, 20),
-						Size = UDim2.new(1, -170, 0, 18),
+						Size = UDim2.new(1, -184, 0, 18),
 						TextSize = 15,
 						TextColor3 = Ui.color.muted,
 					}),
@@ -314,9 +316,9 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 					end, {
 						Enabled = profile.gold >= item.price,
 						AnchorPoint = Vector2.new(1, 0.5),
-						Position = UDim2.new(1, -84, 0.5, 0),
-						Size = UDim2.fromOffset(80, 30),
-						TextSize = 10,
+						Position = UDim2.new(1, -90, 0.5, 0),
+						Size = UDim2.fromOffset(86, 30),
+						TextSize = 9,
 					}),
 					Ui.button(`SELL {math.floor(item.price * Config.ITEM_SELL_FRACTION)}`, function()
 						act("sellItem", { id = item.id })
@@ -325,8 +327,8 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 						BackgroundColor3 = Ui.color.darkRed,
 						AnchorPoint = Vector2.new(1, 0.5),
 						Position = UDim2.new(1, 0, 0.5, 0),
-						Size = UDim2.fromOffset(80, 30),
-						TextSize = 10,
+						Size = UDim2.fromOffset(86, 30),
+						TextSize = 9,
 					}),
 				})
 			end
@@ -345,7 +347,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			Parent = frame,
 		}, { Ui.padding(10, 14) })
 
-		Ui.button("◀", function()
+		Ui.button("<", function()
 			ctx.depth = math.max(1, ctx.depth - 1)
 			render()
 		end, { Enabled = ctx.depth > 1, Size = UDim2.fromOffset(44, 44), Parent = bar })
@@ -357,7 +359,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			TextColor3 = Ui.color.gold,
 			Parent = bar,
 		})
-		Ui.button("▶", function()
+		Ui.button(">", function()
 			ctx.depth = math.min(profile.unlockedDepth, ctx.depth + 1)
 			render()
 		end, {
@@ -448,7 +450,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 
 		local function option(label: string, detail: string, itemId: string?, order: number)
 			local equipped = (goblin.equipment :: any)[target.slot] == itemId
-			Ui.button(`{label}   {detail}{if equipped then "  (equipped)" else ""}`, function()
+			local button = Ui.button(`{label}   {detail}{if equipped then "  (equipped)" else ""}`, function()
 				equipping = nil
 				act("equip", { goblinId = goblin.id, slot = target.slot, itemId = itemId })
 			end, {
@@ -461,6 +463,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				ZIndex = 13,
 				Parent = list,
 			})
+			Ui.padding(0, 12).Parent = button
 		end
 
 		option(if target.slot == "utility" then "Nothing" else "Basic", "free", nil, 0)

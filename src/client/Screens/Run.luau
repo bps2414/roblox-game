@@ -162,7 +162,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	})
 
 	-- Camera grid
-	Ui.title("SECURITY FEEDS  [Q] ◀ ▶ [E]", {
+	Ui.title("SECURITY FEEDS  [Q] < > [E]", {
 		Position = UDim2.fromOffset(856, 70),
 		Size = UDim2.fromOffset(406, 20),
 		Parent = frame,
@@ -222,8 +222,9 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 		BackgroundColor3 = Ui.color.black,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
 		TextWrapped = true,
-		TextSize = 17,
+		TextSize = 16,
 		TextColor3 = Ui.color.muted,
+		ClipsDescendants = true,
 		Parent = frame,
 	})
 	Ui.padding(6, 10).Parent = log
@@ -273,7 +274,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 			elseif state.status == "returned" then
 				cam.info.Text = Ui.paint("🏁 MADE IT OUT", Ui.color.green) .. `  🪙{state.gold}`
 			else
-				cam.info.Text = `♥{state.hp or stats.maxHp}/{stats.maxHp}  🪙{state.gold}  room {state.room}`
+				cam.info.Text = `♥{state.hp or stats.maxHp}/{stats.maxHp}  🪙{state.gold}  R{state.room}`
 			end
 		end
 
@@ -330,7 +331,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 			return a.t < b.t
 		end)
 		local logLines = {}
-		for i = math.max(1, #recent - 4), #recent do
+		for i = math.max(1, #recent - 3), #recent do
 			table.insert(logLines, recent[i].text)
 		end
 		log.Text = table.concat(logLines, "\n")

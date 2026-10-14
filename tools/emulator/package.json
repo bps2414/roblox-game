@@ -1,0 +1,10 @@
+{
+  "name": "send-goblins-ui-emulator",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fontsource/inconsolata": "5.3.0",
+    "@fontsource/press-start-2p": "5.3.0",
+    "playwright-core": "1.56.1"
+  }
+}

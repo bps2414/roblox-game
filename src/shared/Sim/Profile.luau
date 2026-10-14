@@ -49,9 +49,27 @@ local Profile = {}
 
 Profile.VERSION = 1
 
+local function nameTaken(profile: Profile, name: string): boolean
+	for _, list in { profile.goblins, profile.tavern } do
+		for _, goblin in list do
+			if goblin.name == name then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local function newGoblin(profile: Profile, rng: Rng.Rng): Goblin.Goblin
 	local goblin = Goblin.new(rng, `G{profile.nextId}`)
 	profile.nextId += 1
+	-- Two goblins called Snix is one too many.
+	for _ = 1, 20 do
+		if not nameTaken(profile, goblin.name) then
+			break
+		end
+		goblin.name = Goblin.randomName(rng)
+	end
 	return goblin
 end
 

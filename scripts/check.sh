@@ -25,5 +25,9 @@ luau-lsp analyze --platform=roblox --sourcemap=sourcemap.json \
 	--definitions=globalTypes.d.luau src
 
 mkdir -p build
+# Smoke test: plays the real client + server in the engine emulator.
+rojo sourcemap default.project.json --include-non-scripts -o build/sourcemap-full.json
+lune run tools/emulator/play -- build/emulator >/dev/null
+
 rojo build default.project.json -o build/game.rbxl
 echo "OK: build/game.rbxl"

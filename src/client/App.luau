@@ -79,6 +79,7 @@ function App.start()
 		root = content,
 		profile = nil,
 		party = {},
+		known = {},
 		depth = 1,
 		busy = false,
 

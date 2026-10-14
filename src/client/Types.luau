@@ -12,6 +12,7 @@ export type Ctx = {
 	root: Frame,
 	profile: any,
 	party: { [string]: boolean },
+	known: { [string]: boolean }, -- goblins already seen (new ones auto-join the party)
 	depth: number,
 	busy: boolean,
 	call: (action: string, payload: { [string]: any }?) -> Net.Response,

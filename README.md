@@ -44,6 +44,18 @@ lune run scripts/watch -- 3 6 1234   # "transmissão" em texto: andar, nº de go
 lune run scripts/balance -- 2000     # Monte Carlo de balanceamento
 ```
 
+Emulador de UI (roda o cliente e o servidor reais num "Roblox" falso e renderiza as telas):
+
+```sh
+rojo sourcemap default.project.json --include-non-scripts -o build/sourcemap-full.json
+lune run tools/emulator/play -- build/emulator 7          # joga sozinho, salva a árvore da UI de cada passo
+(cd tools/emulator && npm install)
+node tools/emulator/render.mjs build/emulator/7-run.json build/emulator/7-run.png
+```
+
+É uma aproximação do layout do Roblox (UDim2, layouts, padding, stroke, fontes equivalentes), útil pra
+pegar erros de execução e texto estourando. Não substitui testar no Studio.
+
 O design do jogo está em [`docs/DESIGN.md`](docs/DESIGN.md).
 
 O build gera `build/game.rbxl`, que pode ser aberto direto no Roblox Studio.
