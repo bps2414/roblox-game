@@ -13,7 +13,7 @@ Jogo para Roblox, desenvolvido com [Rojo](https://rojo.space) (código em arquiv
 
 ## No seu PC
 
-1. Instale o [Rokit](https://github.com/rojo-rbx/rokit) e rode `rokit install` (instala rojo, selene, stylua, wally, lune).
+1. Instale o [Rokit](https://github.com/rojo-rbx/rokit) e rode `rokit install` (instala rojo, selene, stylua, wally, lune, luau-lsp).
 2. Instale o plugin do Rojo no Studio (`rojo plugin install`).
 3. `rojo serve` e clique em **Connect** no plugin dentro do Studio.
 
@@ -49,7 +49,7 @@ Emulador de UI (roda o cliente e o servidor reais num "Roblox" falso e renderiza
 ```sh
 rojo sourcemap default.project.json --include-non-scripts -o build/sourcemap-full.json
 lune run tools/emulator/play -- build/emulator 7          # joga sozinho, salva a árvore da UI de cada passo
-(cd tools/emulator && npm install)
+(cd tools/emulator && npm install && npx playwright-core install chromium)
 node tools/emulator/render.mjs build/emulator/7-run.json build/emulator/7-run.png
 ```
 

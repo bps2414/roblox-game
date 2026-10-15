@@ -199,7 +199,7 @@ body{width:${VIEW.w}px;height:${VIEW.h}px;position:relative;overflow:hidden;back
 
 const htmlPath = output.replace(/\.png$/, '.html');
 fs.writeFileSync(htmlPath, html);
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 const page = await browser.newPage({ viewport: { width: VIEW.w, height: VIEW.h }, deviceScaleFactor: 1.5 });
 await page.goto(`file://${path.resolve(htmlPath)}`);
 await page.evaluate(() => document.fonts.ready);
