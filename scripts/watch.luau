@@ -30,7 +30,17 @@ end
 print(`=== SEND GOBLINS — floor {depth}, {count} goblins, seed {seed} ===\n`)
 for _, g in goblins do
 	local s = Goblin.stats(g)
-	print(string.format("  %-14s %-8s HP %2d  Food %2d  Perc %2d  Luck %2d", g.name, g.trait, s.maxHp, s.food, s.perception, s.luck))
+	print(
+		string.format(
+			"  %-14s %-8s HP %2d  Food %2d  Perc %2d  Luck %2d",
+			g.name,
+			g.trait,
+			s.maxHp,
+			s.food,
+			s.perception,
+			s.luck
+		)
+	)
 end
 print("")
 
@@ -43,6 +53,8 @@ end
 
 print(`\n=== {result.survivors}/{count} came back. Loot: {result.totalGold} gold. ({result.duration}s of footage) ===`)
 for _, g in result.goblins do
-	local status = if g.survived then `back, +{g.xp} xp` else `died ({g.cause}{if g.causeName then ": " .. g.causeName else ""})`
+	local status = if g.survived
+		then `back, +{g.xp} xp`
+		else `died ({g.cause}{if g.causeName then ": " .. g.causeName else ""})`
 	print(string.format("  %-14s room %2d  %4d gold  %s", names[g.id], g.rooms, g.gold, status))
 end

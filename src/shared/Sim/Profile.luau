@@ -250,12 +250,18 @@ function Profile.equip(profile: Profile, goblinId: any, slot: any, itemId: any):
 	if newItem and not takeItem(profile, newItem.id) then
 		return false, "You don't have that"
 	end
-	addItem(profile, current)
-	;(goblin.equipment :: any)[slot] = if newItem then newItem.id else nil
+	addItem(profile, current);
+	(goblin.equipment :: any)[slot] = if newItem then newItem.id else nil
 	return true, nil
 end
 
-function Profile.startRun(profile: Profile, ids: any, depth: any, now: number, seed: number): (Expedition.Result?, string?)
+function Profile.startRun(
+	profile: Profile,
+	ids: any,
+	depth: any,
+	now: number,
+	seed: number
+): (Expedition.Result?, string?)
 	if profile.activeRun then
 		return nil, "A run is already in progress"
 	end

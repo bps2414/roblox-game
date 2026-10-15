@@ -39,13 +39,19 @@ end
 print(`Monte Carlo: {RUNS} runs × {PARTY} goblins per cell. Cells: survival% / gold per goblin sent / main killer\n`)
 
 for _, loadout in LOADOUTS do
-	print(`--- {loadout.name} ({loadout.equipment.weapon}, {loadout.equipment.armor}, {loadout.equipment.utility or "-"}) ---`)
+	print(
+		`--- {loadout.name} ({loadout.equipment.weapon}, {loadout.equipment.armor}, {loadout.equipment.utility or "-"}) ---`
+	)
 	for depth = 1, 12 do
 		local rng = Rng.new(depth * 7919)
 		local sent, survived, gold = 0, 0, 0
 		local causes: { [string]: number } = {}
 		for run = 1, RUNS do
-			local result = Expedition.run({ seed = run * 31 + depth, depth = depth, goblins = party(rng, loadout.level, loadout.equipment) })
+			local result = Expedition.run({
+				seed = run * 31 + depth,
+				depth = depth,
+				goblins = party(rng, loadout.level, loadout.equipment),
+			})
 			sent += PARTY
 			survived += result.survivors
 			gold += result.totalGold
@@ -61,16 +67,22 @@ for _, loadout in LOADOUTS do
 				killer, most = cause, n
 			end
 		end
-		print(string.format(
-			"  floor %2d: %5.1f%% survive  %7.1f gold/goblin  killer: %s (%d%%)",
-			depth,
-			survived / sent * 100,
-			gold / sent,
-			killer,
-			if sent - survived > 0 then math.floor(most / (sent - survived) * 100) else 0
-		))
+		print(
+			string.format(
+				"  floor %2d: %5.1f%% survive  %7.1f gold/goblin  killer: %s (%d%%)",
+				depth,
+				survived / sent * 100,
+				gold / sent,
+				killer,
+				if sent - survived > 0 then math.floor(most / (sent - survived) * 100) else 0
+			)
+		)
 	end
 	print("")
 end
 
-print(`Recruit cost {Config.recruitCost(8, 10, 0)}..{Config.recruitCost(12, 30, 20)}; sell value L1/L5/L10 = {Config.sellValue(1)}/{Config.sellValue(5)}/{Config.sellValue(10)}`)
+print(
+	`Recruit cost {Config.recruitCost(8, 10, 0)}..{Config.recruitCost(12, 30, 20)}; sell value L1/L5/L10 = {Config.sellValue(
+		1
+	)}/{Config.sellValue(5)}/{Config.sellValue(10)}`
+)

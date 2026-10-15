@@ -315,7 +315,8 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 			status.Text = ""
 		end
 
-		cardName.Text = `{Ui.paint(goblin.name, Ui.color.green)}  {Ui.paint(goblin.trait, Ui.color.muted)}  HP {hp}/{stats.maxHp}`
+		cardName.Text =
+			`{Ui.paint(goblin.name, Ui.color.green)}  {Ui.paint(goblin.trait, Ui.color.muted)}  HP {hp}/{stats.maxHp}`
 		Ui.setBar(hpBar, hp / stats.maxHp)
 		cardInfo.Text = `🪙 {state.gold}`
 
