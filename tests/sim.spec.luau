@@ -186,14 +186,34 @@ test("final playback state matches the result", function()
 	for seed = 1, 300 do
 		local result = Expedition.run({ seed = seed, depth = 1 + seed % 8, goblins = party(seed, 6) })
 		local start = Playback.all(result, -1)
-		local final = Playback.all(result, result.duration)
-		check(Playback.isFinished(result, result.duration), "not finished")
+		local finish = Playback.endTime(result)
+		local final = Playback.all(result, finish)
+		check(finish >= result.duration, "ends before the simulation")
+		check(Playback.isFinished(result, finish), "not finished")
 		for _, g in result.goblins do
 			check(start[g.id].shown == 0 and start[g.id].status == "delving", "events before start")
 			local state = final[g.id]
 			check(state.gold == g.gold, `gold {state.gold} ~= {g.gold}`)
 			check(state.status == (if g.survived then "returned" else "dead"), `status {state.status}`)
 			check(state.shown == #result.timelines[g.id], "not all events shown")
+		end
+	end
+end)
+
+test("display times keep order, spread beats and never run early", function()
+	for seed = 1, 300 do
+		local result = Expedition.run({ seed = seed, depth = 1 + seed % 8, goblins = party(seed, 6) })
+		for _, g in result.goblins do
+			local events = result.timelines[g.id]
+			local times = Playback.schedule(events)
+			for i, event in events do
+				check(times[i] >= event.t, "shown before it happened")
+				if i > 1 then
+					check(times[i] - times[i - 1] >= Playback.GAP - 1e-9, "beats on top of each other")
+				end
+			end
+			-- Drift stays small: the camera never lags the simulation by more than a room.
+			check(times[#times] - events[#events].t < 3, `lags {times[#times] - events[#events].t}s`)
 		end
 	end
 end)

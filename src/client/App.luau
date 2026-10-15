@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 
 local Net = require(script.Parent.Net)
+local Sfx = require(script.Parent.Sfx)
 local Types = require(script.Parent.Types)
 local Ui = require(script.Parent.Ui)
 
@@ -72,6 +73,20 @@ function App.start()
 	})
 	local toastId = 0
 
+	-- Sound toggle, on top of every screen's top bar.
+	local soundButton: TextButton
+	soundButton = Ui.button("SOUND", function()
+		Sfx.setMuted(not Sfx.isMuted())
+		soundButton.Text = if Sfx.isMuted() then "MUTED" else "SOUND"
+	end, {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.fromOffset(Ui.WIDTH - 14, 28),
+		Size = UDim2.fromOffset(80, 32),
+		TextSize = 10,
+		ZIndex = 40,
+		Parent = root,
+	})
+
 	local current: { destroy: () -> (), refresh: (() -> ())? }? = nil
 
 	local ctx: Ctx
@@ -120,6 +135,7 @@ function App.start()
 				current.destroy()
 			end
 			current = BaseScreen.mount(ctx)
+			Sfx.music("base")
 		end,
 
 		showRun = function(run, result, serverNow)
@@ -127,6 +143,7 @@ function App.start()
 				current.destroy()
 			end
 			current = RunScreen.mount(ctx, run, result, serverNow)
+			Sfx.music("dungeon")
 		end,
 
 		showResults = function(summary, party)
@@ -134,6 +151,7 @@ function App.start()
 				current.destroy()
 			end
 			current = ResultsScreen.mount(ctx, summary, party)
+			Sfx.music("base")
 		end,
 	}
 

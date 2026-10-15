@@ -1,10 +1,12 @@
 --!strict
--- After collecting: who came back, who didn't, what they brought.
+-- After collecting: who came back, who didn't, what they brought. Survivors stand on the
+-- ground, the rest get a tombstone with the cause of death.
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
-local Items = require(ReplicatedStorage.Shared.Sim.Items)
-
+local Art = require(script.Parent.Parent.Art)
+local PixelSprite = require(script.Parent.Parent.PixelSprite)
+local Sfx = require(script.Parent.Parent.Sfx)
 local Types = require(script.Parent.Parent.Types)
 local Ui = require(script.Parent.Parent.Ui)
 
@@ -19,9 +21,9 @@ local CAUSE_TEXT: { [string]: string } = {
 
 function Results.mount(ctx: Types.Ctx, summary: any, party: { any }): Types.Screen
 	local result = summary.result
-	local names: { [string]: string } = {}
+	local byId: { [string]: any } = {}
 	for _, goblin in party do
-		names[goblin.id] = goblin.name
+		byId[goblin.id] = goblin
 	end
 
 	local frame = Ui.new("Frame", {
@@ -40,6 +42,7 @@ function Results.mount(ctx: Types.Ctx, summary: any, party: { any }): Types.Scre
 	}, { Ui.padding(18, 24) })
 
 	local everyoneDied = result.survivors == 0
+	Sfx.play(if everyoneDied then "fail" else "fanfare")
 	Ui.title(`{result.survivors}/{#result.goblins} CAME BACK`, {
 		Size = UDim2.new(1, 0, 0, 36),
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -47,7 +50,7 @@ function Results.mount(ctx: Types.Ctx, summary: any, party: { any }): Types.Scre
 		TextColor3 = if everyoneDied then Ui.color.red else Ui.color.green,
 		Parent = panel,
 	})
-	Ui.label(`FLOOR {result.depth}  ·  LOOT {Ui.paint(`{result.totalGold} GOLD`, Ui.color.gold)}`, {
+	local lootLabel = Ui.label("", {
 		Position = UDim2.fromOffset(0, 40),
 		Size = UDim2.new(1, 0, 0, 28),
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -75,56 +78,86 @@ function Results.mount(ctx: Types.Ctx, summary: any, party: { any }): Types.Scre
 		})
 	end
 
-	local list = Ui.scroll({
+	local grid = Ui.scroll({
 		Position = UDim2.fromOffset(0, 108),
 		Size = UDim2.new(1, 0, 1, -170),
 		Parent = panel,
-	}, { Ui.list(nil, 6) })
+	}, {
+		Ui.new("UIGridLayout", {
+			CellSize = UDim2.fromOffset(160, 200),
+			CellPadding = UDim2.fromOffset(12, 10),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		}),
+		Ui.padding(3),
+	})
 
 	for index, goblin in result.goblins do
-		local name = names[goblin.id] or goblin.id
+		local info = byId[goblin.id]
+		local name = if info then info.name else goblin.id
+		local cell = Ui.new("Frame", {
+			BackgroundColor3 = Color3.fromHex(Art.palette["2"]),
+			BorderSizePixel = 0,
+			LayoutOrder = index,
+			Parent = grid,
+		}, {
+			-- Ground under the sprite.
+			Ui.new("Frame", {
+				Position = UDim2.fromOffset(0, 82),
+				Size = UDim2.new(1, 0, 0, 8),
+				BackgroundColor3 = Color3.fromHex(Art.palette["4"]),
+				BorderSizePixel = 0,
+			}),
+			Ui.label(Ui.paint(name, if goblin.survived then Ui.color.green else Ui.color.muted), {
+				Font = Ui.font.pixel,
+				TextSize = 10,
+				Position = UDim2.fromOffset(0, 96),
+				Size = UDim2.new(1, 0, 0, 18),
+				TextXAlignment = Enum.TextXAlignment.Center,
+			}),
+		})
+		Ui.stroke(if goblin.survived then Ui.color.green else Ui.color.border, 2).Parent = cell
+
+		local sprite = if goblin.survived
+			then PixelSprite.new({ Art.sprites.goblin[1] }, Art.palette, 3, info and Art.goblinSkin[info.trait])
+			else PixelSprite.new(Art.sprites.tombstone, Art.palette, 3)
+		sprite.AnchorPoint = Vector2.new(0.5, 1)
+		sprite.Position = UDim2.new(0.5, 0, 0, 86)
+		sprite.Parent = cell
+
 		local outcome
 		if goblin.survived then
 			local level = summary.levelUps[goblin.id]
-			outcome = Ui.paint(`RETURNED  +{goblin.xp} XP`, Ui.color.green)
-				.. (if level then Ui.paint(`  ⭐ LEVEL {level}!`, Ui.color.gold) else "")
+			outcome = Ui.paint(`MADE IT OUT\n+{goblin.xp} XP`, Ui.color.green)
+				.. (if level then Ui.paint(`\nLEVEL {level}!`, Ui.color.gold) else "")
 		else
 			local cause = CAUSE_TEXT[goblin.cause] or goblin.cause or "died"
 			local detail = if goblin.causeName and goblin.cause ~= "mimic" then ` {goblin.causeName}` else ""
-			outcome = Ui.paint(`💀 {cause}{detail}  (room {goblin.rooms})`, Ui.color.red)
+			outcome = Ui.paint(`{cause}{detail}\nroom {goblin.rooms}`, Ui.color.red)
 		end
-
-		local found = {}
-		for _, itemId in goblin.items do
-			local item = Items.get(itemId)
-			table.insert(found, if item then item.name else itemId)
-		end
-
-		local row = Ui.new("Frame", {
-			Size = UDim2.new(1, -10, 0, if #found > 0 then 52 else 32),
-			BackgroundColor3 = if goblin.survived then Ui.color.panelLight else Ui.color.darkRed,
-			BorderSizePixel = 0,
-			LayoutOrder = index,
-			Parent = list,
-		}, {
-			Ui.padding(4, 10),
-			Ui.label(Ui.paint(name, Ui.color.green), { Size = UDim2.fromOffset(200, 24) }),
-			Ui.label(outcome, { Position = UDim2.fromOffset(200, 0), Size = UDim2.fromOffset(480, 24) }),
-			Ui.label(Ui.paint(`🪙 {goblin.gold}`, Ui.color.gold), {
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, 0, 0, 0),
-				Size = UDim2.fromOffset(120, 24),
-				TextXAlignment = Enum.TextXAlignment.Right,
-			}),
+		Ui.label(outcome, {
+			Position = UDim2.fromOffset(6, 116),
+			Size = UDim2.new(1, -12, 0, 50),
+			TextSize = 15,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			Parent = cell,
 		})
-		if #found > 0 then
-			Ui.label(`Found: {table.concat(found, ", ")}`, {
-				Position = UDim2.fromOffset(200, 22),
-				Size = UDim2.fromOffset(560, 22),
-				TextSize = 17,
-				TextColor3 = Ui.color.caption,
-				Parent = row,
-			})
+		Ui.label(Ui.paint(`{goblin.gold} GOLD`, Ui.color.gold), {
+			Position = UDim2.new(0, 0, 1, -28),
+			Size = UDim2.new(1, -8, 0, 24),
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextSize = 16,
+			Parent = cell,
+		})
+		-- Items found (they come home even when the goblin doesn't).
+		for i, itemId in goblin.items do
+			if Art.sprites[itemId] and i <= 3 then
+				local icon = PixelSprite.new({ Art.sprites[itemId][1] }, Art.palette, 1.5)
+				icon.Position = UDim2.new(0, 6 + (i - 1) * 28, 1, -30)
+				icon.Parent = cell
+			end
 		end
 	end
 
@@ -140,8 +173,17 @@ function Results.mount(ctx: Types.Ctx, summary: any, party: { any }): Types.Scre
 		Parent = panel,
 	})
 
+	local shownAt = os.clock()
+	local function showLoot()
+		local gold = math.floor(result.totalGold * math.clamp((os.clock() - shownAt) / 1.2, 0, 1))
+		lootLabel.Text = `FLOOR {result.depth}  ·  LOOT {Ui.paint(`{gold} GOLD`, Ui.color.gold)}`
+	end
+	showLoot()
+	local counter = RunService.Heartbeat:Connect(showLoot)
+
 	return {
 		destroy = function()
+			counter:Disconnect()
 			frame:Destroy()
 		end,
 	}

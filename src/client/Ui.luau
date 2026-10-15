@@ -2,6 +2,8 @@
 -- Tiny UI toolkit: an instance builder plus the game's pixel-dungeon look.
 -- Everything is laid out on a fixed 1280x720 canvas that is scaled to the screen.
 
+local Sfx = require(script.Parent.Sfx)
+
 local Ui = {}
 
 Ui.WIDTH = 1280
@@ -148,7 +150,10 @@ function Ui.button(text: string, onClick: () -> (), props: Props?): TextButton
 		end
 	end
 	if enabled then
-		button.Activated:Connect(onClick)
+		button.Activated:Connect(function()
+			Sfx.play("click")
+			onClick()
+		end)
 	end
 	return button
 end

@@ -1,6 +1,6 @@
 --!strict
 -- The security-camera view of a run in progress. Replays the server's result in sync
--- with server time. M2 shows the feed as text; M3 adds pixel-art scenes.
+-- with server time: the focused camera is a pixel-art Scene, the others are thumbnails.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -12,12 +12,15 @@ local Goblin = require(Sim.Goblin)
 local Narration = require(Sim.Narration)
 local Playback = require(Sim.Playback)
 
+local Art = require(script.Parent.Parent.Art)
+local PixelSprite = require(script.Parent.Parent.PixelSprite)
+local Scene = require(script.Parent.Parent.Scene)
+local Sfx = require(script.Parent.Parent.Sfx)
 local Types = require(script.Parent.Parent.Types)
 local Ui = require(script.Parent.Parent.Ui)
 
 local Run = {}
 
-local FEED_LINES = 12
 local TICK = 0.1
 
 local function clock(seconds: number): string
@@ -36,8 +39,11 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	local party: { any } = run.party
 	local byId: { [string]: any } = {}
 	local lines: { [string]: { string } } = {}
+	local times: { [string]: { number } } = {}
+	local endTime = Playback.endTime(result)
 	for _, goblin in party do
 		byId[goblin.id] = goblin
+		times[goblin.id] = Playback.schedule(result.timelines[goblin.id])
 		local list = {}
 		for _, event in result.timelines[goblin.id] do
 			table.insert(list, Narration.describe(event, goblin.name))
@@ -46,6 +52,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	end
 
 	local focus = 1
+	local heardFocus, heardShown = 0, 0 -- last event of the focused camera that made a sound
 	local finished = false
 	local collecting = false
 
@@ -56,7 +63,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	-- Top bar
 	local topStats = Ui.label("", {
 		Position = UDim2.fromOffset(300, 0),
-		Size = UDim2.fromOffset(960, 56),
+		Size = UDim2.fromOffset(870, 56),
 		TextXAlignment = Enum.TextXAlignment.Right,
 		TextSize = 22,
 	})
@@ -113,22 +120,12 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 		TextColor3 = Ui.color.text,
 		Parent = feed,
 	})
-	local feedText = Ui.label("", {
-		Position = UDim2.fromOffset(24, 48),
-		Size = UDim2.new(1, -48, 1, -96),
-		TextYAlignment = Enum.TextYAlignment.Bottom,
-		TextWrapped = true,
-		TextSize = 22,
-		TextColor3 = Ui.color.muted,
-		Parent = feed,
-	})
-	local status = Ui.title("", {
-		Position = UDim2.fromOffset(0, 48),
-		Size = UDim2.new(1, 0, 0, 40),
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextSize = 22,
-		Parent = feed,
-	})
+	local scene = Scene.new(feed)
+	for _, label in { camLabel, rec, roomLabel, timeLabel } do
+		label.ZIndex = 10
+		label.TextStrokeTransparency = 0
+		label.Parent = feed -- above the scene
+	end
 
 	local caption = Ui.label("", {
 		Position = UDim2.fromOffset(18, 514),
@@ -181,7 +178,9 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	})
 
 	local render: () -> ()
-	local cams: { { button: TextButton, stroke: UIStroke, name: TextLabel, info: TextLabel } } = {}
+	type Cam =
+		{ button: TextButton, stroke: UIStroke, name: TextLabel, info: TextLabel, portrait: Frame, dead: boolean }
+	local cams: { Cam } = {}
 	for index, goblin in party do
 		local button = Ui.new("TextButton", {
 			Text = "",
@@ -197,22 +196,34 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 		})
 		local stroke = Ui.stroke(Ui.color.borderLight) :: UIStroke
 		stroke.Parent = button
+		-- Thumbnail: the goblin's first idle frame (one frame keeps the instance count down).
+		local portrait = Ui.new("Frame", {
+			Position = UDim2.fromOffset(6, 7),
+			Size = UDim2.fromOffset(60, 60),
+			BackgroundColor3 = Color3.fromHex(Art.palette["2"]),
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			Parent = button,
+		})
+		local sprite = PixelSprite.new({ Art.sprites.goblin[1] }, Art.palette, 2, Art.goblinSkin[goblin.trait])
+		sprite.Position = UDim2.fromOffset(6, 10)
+		sprite.Parent = portrait
 		local name = Ui.title(`CAM {string.format("%02d", index)} {goblin.name:upper()}`, {
-			Position = UDim2.fromOffset(8, 6),
-			Size = UDim2.new(1, -16, 0, 18),
+			Position = UDim2.fromOffset(74, 6),
+			Size = UDim2.new(1, -80, 0, 18),
 			TextSize = 9,
 			TextColor3 = Ui.color.text,
 			Parent = button,
 		})
 		local info = Ui.label("", {
-			Position = UDim2.fromOffset(8, 30),
-			Size = UDim2.new(1, -16, 0, 36),
-			TextSize = 18,
+			Position = UDim2.fromOffset(74, 28),
+			Size = UDim2.new(1, -80, 0, 40),
+			TextSize = 16,
 			TextWrapped = true,
 			TextYAlignment = Enum.TextYAlignment.Top,
 			Parent = button,
 		})
-		cams[index] = { button = button, stroke = stroke, name = name, info = info }
+		cams[index] = { button = button, stroke = stroke, name = name, info = info, portrait = portrait, dead = false }
 	end
 
 	local log = Ui.label("", {
@@ -246,14 +257,18 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 		local response = ctx.call("collect")
 		collecting = false
 		if response.ok then
+			Sfx.play("coin")
 			ctx.showResults(response.summary, party)
 		end
 	end
 
 	render = function()
 		local t = elapsed()
-		local states = Playback.all(result, t)
-		finished = Playback.isFinished(result, t)
+		local states = {}
+		for _, goblin in party do
+			states[goblin.id] = Playback.feed(result.timelines[goblin.id], t, times[goblin.id])
+		end
+		finished = t >= endTime
 
 		local alive, loot = 0, 0
 		for index, goblin in party do
@@ -267,14 +282,21 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 			local cam = cams[index]
 			cam.stroke.Color = if index == focus then Ui.color.green else Ui.color.borderLight
 			cam.button.BackgroundColor3 = if state.status == "dead" then Ui.color.darkRed else Ui.color.feed
+			if state.status == "dead" and not cam.dead then
+				cam.dead = true
+				cam.portrait:ClearAllChildren()
+				local stone = PixelSprite.new(Art.sprites.tombstone, Art.palette, 2)
+				stone.Position = UDim2.fromOffset(6, 10)
+				stone.Parent = cam.portrait
+			end
 			if state.status == "dead" then
 				local last = state.last
 				local killer = if last then last.name or last.cause else nil
-				cam.info.Text = Ui.paint(`💀 {killer or "dead"}`, Ui.color.red) .. `  🪙{state.gold}`
+				cam.info.Text = Ui.paint(`💀 {killer or "dead"}`, Ui.color.red) .. `  {state.gold}G`
 			elseif state.status == "returned" then
-				cam.info.Text = Ui.paint("🏁 MADE IT OUT", Ui.color.green) .. `  🪙{state.gold}`
+				cam.info.Text = Ui.paint("🏁 MADE IT OUT", Ui.color.green) .. `  {state.gold}G`
 			else
-				cam.info.Text = `♥{state.hp or stats.maxHp}/{stats.maxHp}  🪙{state.gold}  R{state.room}`
+				cam.info.Text = `♥{state.hp or stats.maxHp}/{stats.maxHp}  {state.gold}G  R{state.room}`
 			end
 		end
 
@@ -282,7 +304,7 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 			`{alive}/{#party}`,
 			Ui.color.gold
 		)}    LOOT {Ui.paint(tostring(loot), Ui.color.gold)}    RUN {Ui.paint(
-			`{clock(math.min(t, result.duration))}/{clock(result.duration)}`,
+			`{clock(math.min(t, endTime))}/{clock(endTime)}`,
 			Ui.color.gold
 		)}`
 
@@ -296,36 +318,26 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 		timeLabel.Text = `00:{clock(t)}`
 		rec.Visible = state.status == "delving" and math.floor(t * 2) % 2 == 0
 
-		local goblinLines = lines[goblin.id]
-		local from = math.max(1, state.shown - FEED_LINES + 1)
-		local shown = {}
-		for i = from, state.shown do
-			table.insert(shown, goblinLines[i])
+		-- Sound: only new events on the camera being watched (not the backlog after switching).
+		if focus == heardFocus and state.shown > heardShown and state.last then
+			Sfx.event(state.last)
 		end
-		feedText.Text = table.concat(shown, "\n")
-		caption.Text = if state.shown > 0 then goblinLines[state.shown] else `{goblin.name} waits at the entrance...`
+		heardFocus, heardShown = focus, state.shown
 
-		if state.status == "dead" then
-			status.Text = "SIGNAL LOST"
-			status.TextColor3 = Ui.color.red
-		elseif state.status == "returned" then
-			status.Text = "MADE IT OUT"
-			status.TextColor3 = Ui.color.green
-		else
-			status.Text = ""
-		end
+		local goblinLines = lines[goblin.id]
+		caption.Text = if state.shown > 0 then goblinLines[state.shown] else `{goblin.name} waits at the entrance...`
 
 		cardName.Text =
 			`{Ui.paint(goblin.name, Ui.color.green)}  {Ui.paint(goblin.trait, Ui.color.muted)}  HP {hp}/{stats.maxHp}`
 		Ui.setBar(hpBar, hp / stats.maxHp)
-		cardInfo.Text = `🪙 {state.gold}`
+		cardInfo.Text = `{state.gold} GOLD`
 
 		-- Recent events from every camera
 		local recent = {}
 		for id, list in lines do
 			local feedState = states[id]
 			if feedState.shown > 0 then
-				table.insert(recent, { t = feedState.last and feedState.last.t or 0, text = list[feedState.shown] })
+				table.insert(recent, { t = times[id][feedState.shown], text = list[feedState.shown] })
 			end
 		end
 		table.sort(recent, function(a, b)
@@ -367,6 +379,8 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 
 	local accumulator = 0
 	local heartbeat = RunService.Heartbeat:Connect(function(dt)
+		local goblin = party[focus]
+		scene.update(goblin, result.timelines[goblin.id], times[goblin.id], elapsed())
 		accumulator += dt
 		if accumulator >= TICK then
 			accumulator = 0
@@ -375,11 +389,13 @@ function Run.mount(ctx: Types.Ctx, run: any, result: any, _serverNow: number): T
 	end)
 
 	render()
+	scene.update(party[focus], result.timelines[party[focus].id], times[party[focus].id], elapsed())
 
 	return {
 		destroy = function()
 			heartbeat:Disconnect()
 			inputConnection:Disconnect()
+			scene.destroy()
 			frame:Destroy()
 		end,
 		refresh = render,

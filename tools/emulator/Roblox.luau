@@ -150,6 +150,26 @@ function Methods:WaitForChild(name)
 	return self:FindFirstChild(name) or error(`WaitForChild: {name} not found in {self.Name}`)
 end
 
+function Methods:GetDescendants()
+	local all = {}
+	for _, child in self.__children do
+		table.insert(all, child)
+		for _, descendant in child:GetDescendants() do
+			table.insert(all, descendant)
+		end
+	end
+	return all
+end
+
+function Methods:SetAttribute(name, value)
+	self.__attributes = self.__attributes or {}
+	self.__attributes[name] = value
+end
+
+function Methods:GetAttribute(name)
+	return self.__attributes and self.__attributes[name]
+end
+
 function Methods:IsA(className)
 	return self.__class == className
 end
@@ -168,6 +188,10 @@ function Methods:GetPlayers()
 end
 
 function Methods:BindToClose() end
+
+-- Sounds are silent here.
+function Methods:Play() end
+function Methods:Stop() end
 
 function Methods:GetServerTimeNow()
 	return Emu.now
@@ -235,7 +259,7 @@ function Emu.boot(sourcemapPath: string)
 		build(child, game)
 	end
 
-	for _, service in { "Players", "RunService", "UserInputService", "DataStoreService", "Workspace", "StarterPlayer" } do
+	for _, service in { "Players", "RunService", "UserInputService", "DataStoreService", "Workspace", "StarterPlayer", "SoundService" } do
 		if not game:FindFirstChild(service) then
 			new(service, service).Parent = game
 		end
@@ -290,6 +314,8 @@ function Emu.run(instance)
 		UDim2 = roblox.UDim2,
 		Vector2 = roblox.Vector2,
 		Color3 = roblox.Color3,
+		NumberSequence = roblox.NumberSequence,
+		NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
 		Random = FakeRandom,
 		task = task,
 		warn = function(...)

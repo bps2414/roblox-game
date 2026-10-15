@@ -19,6 +19,7 @@ lune run tests/sim.spec                      # testes da simulação
 lune run tests/profile.spec                  # testes de economia/ações do jogador
 lune run scripts/watch -- 3 6 1234           # expedição narrada no terminal (andar, goblins, seed)
 lune run scripts/balance -- 2000             # Monte Carlo de balanceamento
+lune run scripts/sprites -- build/sprites.png 6  # folha PNG com toda a pixel art de Art.luau
 scripts/check.sh                             # tudo: stylua, selene, testes, luau-lsp, emulador, build (bash/Git Bash)
 ```
 
@@ -39,6 +40,8 @@ src/shared/Sim/   Luau PURO (sem APIs do Roblox) → roda no Studio e no Lune
 src/server/       init.server.luau: sessões, DataStore (Store.luau), seeds aleatórias, relógio, remote
 src/client/       UI construída em código num canvas fixo 1280x720 escalado (Ui.luau = toolkit)
   App            troca de telas e estado de UI;  Screens/Base, Run, Results
+  Scene          a câmera principal da Run: sala em pixel art animada a partir de (eventos, tempos, agora)
+  PixelSprite    sprite de pixel art montado com Frames (trechos por cor, em Scale); Art = paleta + grades
 tests/            specs do Lune
 tools/emulator/   "Roblox falso" no Lune que roda cliente+servidor reais e renderiza a UI em PNG
 ```
@@ -64,7 +67,7 @@ Regras:
 ## Status e próxima fase
 
 - M1 ✅ simulação + testes + balanceamento. M2 ✅ loop jogável (UI em texto, save básico).
-- **M3 (próxima): visual 2D em pixel art.** Trocar o feed de texto da tela `Run` por cenas:
+- **M3 (em andamento): visual 2D em pixel art.** M3a ✅ `PixelSprite` + kit de arte (`Art.luau`). M3b ✅ `Scene.luau` (cena da câmera, derivada só de timeline + tempo; `Playback.schedule` espalha os eventos de uma sala). M3c ✅ sprites no Quartel/Taverna/Loja e cemitério no Resultado. Som em `Sfx.luau`. Falta: polimento e testar no Studio. Plano original:
   - sprites de pixel art desenhados com uma grade de `Frame`s (sem upload de imagens), num módulo
     `PixelSprite` que recebe matrizes de caracteres + paleta (como no mockup: goblin, mímico, baú, lápide,
     porta, tocha, monstros);

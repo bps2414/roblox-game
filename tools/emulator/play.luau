@@ -87,7 +87,7 @@ local ok, err = pcall(function()
 		heartbeat()
 		step(`{prefix}-run`)
 
-		Emu.now = run.startedAt + result.duration + 1
+		Emu.now = run.startedAt + Playback.endTime(result) + 1
 		heartbeat()
 		Emu.click(Emu.findText(player.PlayerGui, "^COLLECT"))
 		step(`{prefix}-results`)

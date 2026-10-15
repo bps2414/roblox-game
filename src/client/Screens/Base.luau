@@ -10,6 +10,9 @@ local Goblin = require(Sim.Goblin)
 local Items = require(Sim.Items)
 local Profile = require(Sim.Profile)
 
+local Art = require(script.Parent.Parent.Art)
+local PixelSprite = require(script.Parent.Parent.PixelSprite)
+local Sfx = require(script.Parent.Parent.Sfx)
 local Types = require(script.Parent.Parent.Types)
 local Ui = require(script.Parent.Parent.Ui)
 
@@ -17,9 +20,29 @@ local Base = {}
 
 local SLOTS = { "weapon", "armor", "utility" }
 
+local ACTION_SOUND: { [string]: string } = {
+	recruit = "hire",
+	buyItem = "buy",
+	sellItem = "coin",
+	sellGoblin = "coin",
+}
+
 local function itemName(id: string?): string
 	local item = Items.get(id)
 	return if item then item.name else "—"
+end
+
+-- First frame of a sprite (portraits and icons don't animate; one frame keeps it light).
+local function still(name: string, pixel: number, props: { [string]: any }, skin: { [string]: string }?): Frame
+	local sprite = PixelSprite.new({ Art.sprites[name][1] }, Art.palette, pixel, skin)
+	for key, value in props do
+		(sprite :: any)[key] = value
+	end
+	return sprite
+end
+
+local function goblinPortrait(goblin: any, pixel: number, props: { [string]: any }): Frame
+	return still("goblin", pixel, props, Art.goblinSkin[goblin.trait])
 end
 
 function Base.mount(ctx: Types.Ctx): Types.Screen
@@ -39,7 +62,9 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 		if ctx.busy then
 			return
 		end
-		ctx.call(action, payload)
+		if ctx.call(action, payload).ok and ACTION_SOUND[action] then
+			Sfx.play(ACTION_SOUND[action])
+		end
 		render()
 	end
 
@@ -101,7 +126,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				)}    BARRACKS {Ui.paint(`{#profile.goblins}/{Config.MAX_GOBLINS}`, Ui.color.gold)}`,
 				{
 					Position = UDim2.fromOffset(420, 0),
-					Size = UDim2.fromOffset(840, 56),
+					Size = UDim2.fromOffset(750, 56),
 					TextXAlignment = Enum.TextXAlignment.Right,
 					TextSize = 22,
 				}
@@ -121,53 +146,76 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			Parent = parent,
 		}, {
 			Ui.padding(8, 10),
+			Ui.new("Frame", {
+				Size = UDim2.fromOffset(72, 72),
+				BackgroundColor3 = Color3.fromHex(Art.palette["2"]),
+				BorderSizePixel = 0,
+			}, { goblinPortrait(goblin, 3, { Position = UDim2.fromOffset(0, 0) }) }),
 			Ui.label(goblin.name, {
 				Font = Ui.font.pixel,
-				TextSize = 13,
+				TextSize = 12,
 				TextColor3 = Ui.color.green,
-				Size = UDim2.fromOffset(180, 20),
+				Position = UDim2.fromOffset(82, 0),
+				Size = UDim2.fromOffset(130, 20),
 			}),
 			Ui.label(goblin.trait:upper(), {
 				Font = Ui.font.pixel,
-				TextSize = 9,
-				Position = UDim2.fromOffset(186, 0),
-				Size = UDim2.fromOffset(80, 20),
+				TextSize = 10,
+				Position = UDim2.fromOffset(212, 0),
+				Size = UDim2.fromOffset(76, 20),
 				BackgroundTransparency = 0,
 				BackgroundColor3 = Ui.color.purple,
 				TextXAlignment = Enum.TextXAlignment.Center,
 			}),
 			Ui.label(`LV {goblin.level}`, {
-				Position = UDim2.fromOffset(276, 0),
-				Size = UDim2.fromOffset(70, 20),
+				Position = UDim2.fromOffset(292, 0),
+				Size = UDim2.fromOffset(60, 20),
 				TextXAlignment = Enum.TextXAlignment.Right,
 				TextColor3 = Ui.color.gold,
 			}),
 			Ui.bar((goblin.xp - prevXp) / math.max(1, nextXp - prevXp), Ui.color.gold, {
-				Position = UDim2.fromOffset(0, 24),
-				Size = UDim2.new(1, 0, 0, 6),
+				Position = UDim2.fromOffset(82, 26),
+				Size = UDim2.fromOffset(270, 6),
 			}),
-			Ui.label(
-				`HP {stats.maxHp} FOOD {stats.food} PER {stats.perception} LCK {stats.luck} ATK {stats.attack} DEF {stats.defense}`,
-				{ Position = UDim2.fromOffset(0, 34), TextSize = 16 }
-			),
+			Ui.label(`HP {stats.maxHp}  FOOD {stats.food}  PER {stats.perception}`, {
+				Position = UDim2.fromOffset(82, 36),
+				Size = UDim2.fromOffset(270, 18),
+				TextSize = 16,
+			}),
+			Ui.label(`LCK {stats.luck}  ATK {stats.attack}  DEF {stats.defense}`, {
+				Position = UDim2.fromOffset(82, 54),
+				Size = UDim2.fromOffset(270, 18),
+				TextSize = 16,
+			}),
 			Ui.label(Goblin.TRAIT_INFO[goblin.trait] or "", {
-				Position = UDim2.fromOffset(0, 54),
-				TextSize = 15,
+				Position = UDim2.fromOffset(0, 124),
+				Size = UDim2.fromOffset(352, 16),
+				TextSize = 14,
 				TextColor3 = Ui.color.muted,
 			}),
 		})
 
 		for index, slot in SLOTS do
-			Ui.button(itemName((goblin.equipment :: any)[slot]), function()
+			local itemId = (goblin.equipment :: any)[slot]
+			local button = Ui.button(itemName(itemId), function()
 				equipping = { goblinId = goblin.id, slot = slot }
 				render()
 			end, {
 				Font = Ui.font.body,
-				TextSize = 15,
-				Position = UDim2.fromOffset((index - 1) * 116, 80),
-				Size = UDim2.fromOffset(110, 24),
+				TextSize = 14,
+				TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Position = UDim2.fromOffset((index - 1) * 118, 80),
+				Size = UDim2.fromOffset(112, 40),
 				Parent = card,
 			})
+			Ui.new("UIPadding", { PaddingLeft = UDim.new(0, 38), PaddingRight = UDim.new(0, 4) }).Parent = button
+			if itemId and Art.sprites[itemId] then
+				still(itemId, 2, {
+					Position = UDim2.new(0, -34, 0.5, -16),
+					Parent = button,
+				})
+			end
 		end
 
 		Ui.button(if inParty then "IN PARTY ✓" else "+ PARTY", function()
@@ -181,7 +229,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			render()
 		end, {
 			BackgroundColor3 = if inParty then Ui.color.darkGreen else Ui.color.borderLight,
-			Position = UDim2.fromOffset(0, 112),
+			Position = UDim2.fromOffset(0, 144),
 			Size = UDim2.fromOffset(170, 26),
 			Parent = card,
 		})
@@ -190,7 +238,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			act("sellGoblin", { id = goblin.id })
 		end, {
 			BackgroundColor3 = Ui.color.darkRed,
-			Position = UDim2.fromOffset(178, 112),
+			Position = UDim2.fromOffset(182, 144),
 			Size = UDim2.fromOffset(170, 26),
 			Parent = card,
 		})
@@ -211,7 +259,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			Parent = panel,
 		}, {
 			Ui.new("UIGridLayout", {
-				CellSize = UDim2.fromOffset(372, 150),
+				CellSize = UDim2.fromOffset(372, 194),
 				CellPadding = UDim2.fromOffset(10, 10),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
@@ -255,13 +303,15 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				Parent = list,
 			}, {
 				Ui.padding(6, 8),
+				goblinPortrait(offer, 2, { Position = UDim2.fromOffset(-4, -2) }),
 				Ui.label(`{Ui.paint(offer.name, Ui.color.green)}  {Ui.paint(offer.trait, Ui.color.muted)}`, {
-					Size = UDim2.new(1, -110, 0, 22),
+					Position = UDim2.fromOffset(50, 0),
+					Size = UDim2.new(1, -160, 0, 22),
 				}),
 				Ui.label(`HP {stats.maxHp}  FOOD {stats.food}  PER {stats.perception}  LCK {stats.luck}`, {
-					Position = UDim2.fromOffset(0, 24),
-					Size = UDim2.new(1, -110, 0, 22),
-					TextSize = 17,
+					Position = UDim2.fromOffset(50, 24),
+					Size = UDim2.new(1, -160, 0, 22),
+					TextSize = 15,
 				}),
 				Ui.button(`HIRE {cost}G`, function()
 					act("recruit", { index = index })
@@ -301,13 +351,14 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 					Parent = scroll,
 				}, {
 					Ui.padding(4, 8),
+					still(item.id, 2, { Position = UDim2.fromOffset(0, 3) }),
 					Ui.label(
 						`{item.name}{if owned > 0 then Ui.paint(` x{owned}`, Ui.color.gold) else ""}`,
-						{ Size = UDim2.new(1, -184, 0, 20) }
+						{ Position = UDim2.fromOffset(40, 0), Size = UDim2.new(1, -224, 0, 20) }
 					),
 					Ui.label(Items.describe(item), {
-						Position = UDim2.fromOffset(0, 20),
-						Size = UDim2.new(1, -184, 0, 18),
+						Position = UDim2.fromOffset(40, 20),
+						Size = UDim2.new(1, -224, 0, 18),
 						TextSize = 15,
 						TextColor3 = Ui.color.muted,
 					}),
@@ -385,6 +436,7 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 			end
 			local response = ctx.call("send", { ids = ids, depth = ctx.depth })
 			if response.ok then
+				Sfx.play("send")
 				ctx.showRun(response.run, response.result, response.serverNow)
 			else
 				render()
@@ -463,7 +515,11 @@ function Base.mount(ctx: Types.Ctx): Types.Screen
 				ZIndex = 13,
 				Parent = list,
 			})
-			Ui.padding(0, 12).Parent = button
+			Ui.new("UIPadding", { PaddingLeft = UDim.new(0, 52), PaddingRight = UDim.new(0, 12) }).Parent = button
+			if itemId and Art.sprites[itemId] then
+				local icon = still(itemId, 2, { Position = UDim2.new(0, -44, 0.5, -16), ZIndex = 14 })
+				icon.Parent = button
+			end
 		end
 
 		option(if target.slot == "utility" then "Nothing" else "Basic", "free", nil, 0)
